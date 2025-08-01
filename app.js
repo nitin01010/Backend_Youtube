@@ -12,6 +12,8 @@ dbConnection();
 
 // Routes
 app.use("/", require("./routes/test"));
+app.use("/api/v1/youtube", require("./routes/youtube"));
+app.use("/api/v1/user", require("./routes/user"));
 
 // Server
 const PORT = process.env.PORT || 3000;
