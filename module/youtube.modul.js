@@ -24,8 +24,15 @@ const YoutubeSchema = new mongoose.Schema({
     category: String,
     comments: [
         {
-            commentId: String,
-            userId: String,
+            userId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'User',
+                required: true
+            },
+            userName: {
+                type: String,
+                required: true
+            },
             text: String,
             timestamp: Date
         }

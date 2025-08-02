@@ -59,23 +59,24 @@ async function handleRegister(req, res) {
 
 async function handleLogin(req, res) {
     try {
-        const { username, password } = req.body;
+        let { email, password } = req.body;
 
-        if (!username || !password) {
-            return res.status(400).json({ message: "Please enter username and password." });
+        if (!email || !password) {
+            return res.status(400).json({ message: "Please enter email and password." });
         }
 
-        const trimmedUsername = username.trim();
+        const trimmedEmail = email.trim().toLowerCase();
 
-        const user = await User.findOne({ username: trimmedUsername });
+        const user = await User.findOne({ email: trimmedEmail });
+
         if (!user) {
             return res.status(401).json({ message: "Invalid username not found" });
         }
 
-        const isMatch = await bcrypt.compare(password, user.password);
+        const isMatch = await bcrypt.compare(password, user.password); // keep password case-sensitive
 
         if (!isMatch) {
-            return res.status(401).json({ message: "Invalid  password." });
+            return res.status(401).json({ message: "Invalid password." });
         }
 
         const token = jwt.sign(
@@ -84,15 +85,19 @@ async function handleLogin(req, res) {
             { expiresIn: "1d" }
         );
 
-        res.status(200).json({
+        return res.status(200).json({
             message: "Login successful.",
             token,
         });
 
     } catch (error) {
-        res.status(500).json({ message: "Something went wrong.", error: error.message });
+        return res.status(500).json({
+            message: "Something went wrong.",
+            error: error.message,
+        });
     }
 }
+
 
 async function handleDeleteByid(req, res) {
     try {
