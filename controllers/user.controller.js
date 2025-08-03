@@ -2,15 +2,6 @@ const User = require("../module/users.modules");
 const bcrypt = require('bcrypt');
 const jwt = require("jsonwebtoken");
 
-async function handlegetAllUser(req, res) {
-    try {
-        const AllUser = await User.find({});
-        res.status(200).json({ message: 'all user get', data: AllUser });
-    } catch (error) {
-        res.status(200).json({ message: 'somethink worng ...', error });
-    }
-}
-
 async function handleRegister(req, res) {
     try {
         const { username, email, password } = req.body;
@@ -98,30 +89,7 @@ async function handleLogin(req, res) {
     }
 }
 
-
-async function handleDeleteByid(req, res) {
-    try {
-        const { id } = req.params;
-
-        const user = await User.findById(id);
-
-        if (!user) {
-            return res.status(404).json({ message: "User not found." });
-        }
-
-        await User.findByIdAndDelete(id);
-
-        res.status(200).json({
-            message: "User deleted successfully.",
-        });
-    } catch (error) {
-        res.status(500).json({ message: "Something went wrong.", error: error.message });
-    }
-}
-
 module.exports = {
-    handlegetAllUser,
     handleRegister,
     handleLogin,
-    handleDeleteByid
 }

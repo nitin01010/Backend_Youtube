@@ -1,10 +1,12 @@
 const express = require("express");
 const router = express.Router();
-const { handlegetAllUser, handleRegister, handleLogin, handleDeleteByid } = require("../controllers/user.controller");
 
-router.get("/",handlegetAllUser);
+const { handleRegister, handleLogin } = require("../controllers/user.controller");
+
+// CREATE USER 
 router.post("/register", handleRegister);
-router.post("/login",handleLogin);
-router.delete("/:id",handleDeleteByid);
+
+// LOGIN USER
+router.post("/login", handleLogin);
 
 module.exports = router

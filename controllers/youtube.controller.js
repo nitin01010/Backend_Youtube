@@ -120,43 +120,170 @@ async function handleComments(req, res) {
 }
 
 async function handleDelete(req, res) {
-    try {
-        const { videoId, commentId, userId } = req.body;
+  try {
+    const { videoId, commentId, userId, authToken } = req.body;
 
-        if (!videoId || !commentId || !userId) {
-            return res.status(400).json({ message: 'Missing required fields: videoId, commentId, or userId' });
-        }
-
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-
-        const result = await youtubeCollection.updateOne(
-            {
-                videoId: videoId,
-                'comments._id': commentId,
-                'comments.userId': userId,
-            },
-            {
-                $pull: { comments: { _id: commentId } },
-            }
-        );
-
-        if (result.modifiedCount === 0) {
-            return res.status(404).json({
-                message: 'Comment not found or you do not have permission to delete it',
-            });
-        }
-
-        // 4. Success response
-        res.status(200).json({ message: 'Comment deleted successfully' });
-
-    } catch (err) {
-        console.error('Delete comment error:', err);
-        res.status(500).json({ message: 'Server error', error: err.message });
+    // 1. Validate input
+    if (!videoId || !commentId || !userId || !authToken) {
+      return res.status(400).json({ message: 'Missing required fields: videoId, commentId, userId, or authToken' });
     }
+
+    // 2. Verify user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // 3. Decode and verify token
+    let decodedUser;
+    try {
+      decodedUser = jwt.verify(authToken, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ message: 'Invalid or expired token' });
+    }
+
+    // 4. Check permission: only allow deleting own comment
+    if (decodedUser.id !== userId) {
+      return res.status(403).json({ message: 'You do not have permission to delete this comment' });
+    }
+
+    // 5. Delete the comment
+    const result = await youtubeCollection.updateOne(
+      {
+        videoId,
+        'comments._id': commentId,
+        'comments.userId': userId,
+      },
+      {
+        $pull: { comments: { _id: commentId } },
+      }
+    );
+
+    if (result.modifiedCount === 0) {
+      return res.status(404).json({
+        message: 'Comment not found or already deleted',
+      });
+    }
+
+    // 6. Success response
+    res.status(200).json({ message: 'Comment deleted successfully' });
+
+  } catch (err) {
+    console.error('Delete comment error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
 }
+
+
+async function handleEdit(req, res) {
+  try {
+    const { videoId, commentId, userId, authToken, updatedText } = req.body;
+
+    if (!videoId || !commentId || !userId || !authToken || !updatedText) {
+      return res.status(400).json({
+        message: 'Missing required fields: videoId, commentId, userId, authToken, or updatedText'
+      });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    let decodedUser;
+    try {
+      decodedUser = jwt.verify(authToken, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ message: 'Invalid or expired token' });
+    }
+
+    if (decodedUser.id !== userId) {
+      return res.status(403).json({ message: 'You do not have permission to edit this comment' });
+    }
+
+    const result = await youtubeCollection.updateOne(
+      {
+        videoId,
+        'comments._id': commentId,
+        'comments.userId': userId,
+      },
+      {
+        $set: {
+          'comments.$.text': updatedText,
+          'comments.$.timestamp': new Date(), 
+        }
+      }
+    );
+
+    if (result.modifiedCount === 0) {
+      return res.status(404).json({
+        message: 'Comment not found or not updated',
+      });
+    }
+
+    res.status(200).json({ message: 'Comment updated successfully' });
+
+  } catch (err) {
+    console.error('Edit comment error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
+
+
+async function handleLike(req, res) {
+  try {
+    const { videoId, userId } = req.body;
+
+    if (!videoId || !userId) {
+      return res.status(400).json({ message: "videoId and userId are required" });
+    }
+
+    const video = await youtubeCollection.findOne({ videoId });
+    const user = await User.findById(userId);
+
+    if (!video) {
+      return res.status(404).json({ message: "Video not found" });
+    }
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Initialize arrays if they don't exist
+    if (!user.likedVideos) user.likedVideos = [];
+    if (!video.likedBy) video.likedBy = [];
+
+    const alreadyLiked = user.likedVideos.includes(videoId);
+
+    if (alreadyLiked) {
+      // Unlike: remove videoId from user and userId from video
+      user.likedVideos = user.likedVideos.filter(id => id !== videoId);
+      video.likedBy = video.likedBy.filter(id => id !== userId);
+      video.likes = Math.max(0, video.likes - 1); // Prevent negative likes
+
+      await user.save();
+      await video.save();
+
+      return res.status(200).json({ message: "Video unliked successfully" });
+    } else {
+      // Like: add videoId to user and userId to video
+      user.likedVideos.push(videoId);
+      video.likedBy.push(userId);
+      video.likes = (video.likes || 0) + 1;
+
+      await user.save();
+      await video.save();
+
+      return res.status(200).json({ message: "Video liked successfully" });
+    }
+
+  } catch (error) {
+    console.error("Error liking video:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+
 
 module.exports = {
     handleAllVideos,
@@ -165,5 +292,7 @@ module.exports = {
     handleCategory,
     handleSearch,
     handleComments,
-    handleDelete
+    handleDelete,
+    handleEdit,
+    handleLike,
 }

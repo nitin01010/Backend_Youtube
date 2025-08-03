@@ -23,7 +23,11 @@ const UserSchema = new mongoose.Schema({
   channels: {
     type: [String],
     default: [],
-  }
+  },
+  likedVideos: {
+  type: [String],
+  default: [],
+}
 });
 
 const User = mongoose.model("User", UserSchema);
