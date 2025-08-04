@@ -6,7 +6,12 @@ const cors = require("cors");
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cors());
+app.use(cors({
+  origin: 'https://youtubekajudva.vercel.app',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true  // only if you're using cookies or auth headers
+}));
 
 // Database Connection
 const dbConnection = require("./db/Connection");
