@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const { handleAllVideos, handleCreateVideo, handleFindVideoById, handleCategory, handleSearch, handleComments, handleDelete, handleEdit, handleLike } = require("../controllers/youtube.controller");
+const { handleAllVideos, handleCreateVideo, handleFindVideoById, handleCategory, handleSearch, handleComments, handleDelete, handleEdit, handleLike,  handleCreateChannel } = require("../controllers/youtube.controller");
 
 // GET ALL VIDEOS
 router.get("/", handleAllVideos);  
@@ -27,8 +27,9 @@ router.post("/comment/delete", handleDelete);
 // COMMENT EDIT BY ID 
 router.post("/comment/edit", handleEdit);
 
-//  LIKE VIDEO | UNLIKE VIDEO
+//  CREATE CHANNLE
 router.post("/video/like/increment", handleLike);
+router.post("/create/channle", handleCreateChannel);
 
 
 module.exports = router

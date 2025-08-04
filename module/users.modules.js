@@ -21,7 +21,18 @@ const UserSchema = new mongoose.Schema({
     default: [],
   },
   channels: {
-    type: [String],
+    type: [
+      {
+        channelName: {
+          type: String,
+          required: true,
+        },
+        videos: {
+          type: [String],
+          default: [],
+        },
+      }
+    ],
     default: [],
   },
   likedVideos: {

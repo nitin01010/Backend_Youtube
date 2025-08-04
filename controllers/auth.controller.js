@@ -26,7 +26,7 @@ async function handleAuth(req, res) {
     }
 
     const findUser = await User.findById(decoded.id);
-    const {username,avatar,_id,email} = findUser;
+    const {username,avatar,_id,email,channels} = findUser;
 
     req.user = decoded;
 
@@ -34,7 +34,7 @@ async function handleAuth(req, res) {
       success: true,
       auth: true,
       userId:{
-        username,avatar,_id,email
+        username,avatar,_id,email,channels
       }
     });
 
